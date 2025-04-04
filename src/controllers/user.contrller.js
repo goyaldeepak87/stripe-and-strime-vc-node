@@ -5,6 +5,7 @@ const { tokenService, fileService } = require('../services');
 const { Token, User } = require('../models');
 const { userService } = require('../services');
 const userMessages = require('../messages/userMessages');
+const stripe = require('stripe')("sk_test_51R9ONz2aFywf1JUEgc6yDNswm4pzy2rROt0H55lqmoWMmjpYynAhFOi4fUemOKOYo7KG5TukTXucsPuRFFUDg9au0033Vbf48w");
 
 const userProfile = catchAsync(async (req, res) => {
     const token = req.headers.authorization;
@@ -40,21 +41,34 @@ const userUpadteProfile = catchAsync(async (req, res) => {
 
 
 const createCheckoutSession = catchAsync(async (req, res) => {
-    console.log("req.body", req.body)
-    // const { line_items } = req.body;
-    // const session = await stripe.checkout.sessions.create({
-    //     payment_method_types: ['card'],
-    //     line_items,
-    //     mode: 'payment',
-    //     success_url: `${req.headers.origin}/success`,
-    //     cancel_url: `${req.headers.origin}/cancel`,
-    // });
-    // res.sendJSONResponse({
-    //     statusCode: httpStatus.OK,
-    //     status: true,
-    //     message: userMessages.USER_PROFILE_UPDATAED,
-    //     data: { result: { session } },
-    // });
+    // console.log("req.body", req.body)
+    // const  product_data  = req.body;
+    const line_items = [ 
+        {
+            price_data: {
+                currency: 'usd',
+                product_data: {
+                    name: 'T-shirt',
+                    // images: ['https://example.com/t-shirt.png'],
+                },
+                unit_amount: 2000,
+            },
+            quantity: 1,
+        },
+    ];
+    const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items,
+        mode: 'payment',
+        success_url: `http://localhost:3000/success`,
+        cancel_url: `http://localhost:3000/cancel`,
+    });
+    res.sendJSONResponse({
+        statusCode: httpStatus.OK,
+        status: true,
+        message: userMessages.USER_PROFILE_UPDATAED,
+        data: { result: { session } },
+    });
 })
 
 module.exports = {
