@@ -1,0 +1,1 @@
+module.exports.userDao = require('./user.dao');
