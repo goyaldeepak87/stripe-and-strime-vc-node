@@ -14,5 +14,8 @@ router.post("/update-profile", auth(), upload.single('profile_picture'), userCon
 
 // Paymen Stripe
 router.post("/api/checkout_sessions", userController.createCheckoutSession);
+router.get("/api/profile", (req, res) => {
+    res.send('Hello World!');
+})
 
 module.exports = router;

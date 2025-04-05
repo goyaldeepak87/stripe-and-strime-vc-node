@@ -41,9 +41,9 @@ const userUpadteProfile = catchAsync(async (req, res) => {
 
 
 const createCheckoutSession = catchAsync(async (req, res) => {
-    // console.log("req.body", req.body)
+    console.log("req.body", req.body)
     // const  product_data  = req.body;
-    const line_items = [ 
+    const lineitems = [ 
         {
             price_data: {
                 currency: 'usd',
@@ -58,17 +58,19 @@ const createCheckoutSession = catchAsync(async (req, res) => {
     ];
     const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
-        line_items,
+        line_items:lineitems,
         mode: 'payment',
         success_url: `http://localhost:3000/success`,
         cancel_url: `http://localhost:3000/cancel`,
     });
-    res.sendJSONResponse({
-        statusCode: httpStatus.OK,
-        status: true,
-        message: userMessages.USER_PROFILE_UPDATAED,
-        data: { result: { session } },
-    });
+    console.log("session", session)
+    res.json({ id: session.id });
+    // res.sendJSONResponse({
+    //     statusCode: httpStatus.OK,
+    //     status: true,
+    //     message: userMessages.USER_PROFILE_UPDATAED,
+    //     data: { result: { session } },
+    // });
 })
 
 module.exports = {
