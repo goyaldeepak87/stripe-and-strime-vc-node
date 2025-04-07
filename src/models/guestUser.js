@@ -51,10 +51,23 @@ module.exports = (sequelize, DataTypes) => {
         return isMatch;
     };
 
-    GuestUser.hasMany(sequelize.models.GuestToken, {
-        foreignKey: 'user_uuid',
-        sourceKey: 'uuid',
-    });
+    // GuestUser.hasMany(sequelize.models.GuestToken, {
+    //     foreignKey: 'user_uuid',
+    //     sourceKey: 'uuid',
+    // });
+
+    GuestUser.associate = (models) => {
+        GuestUser.hasMany(models.GuestToken, {
+            foreignKey: 'user_uuid',
+            sourceKey: 'uuid',
+        });
+    
+        GuestUser.hasMany(models.Payment, {
+            foreignKey: 'guest_user_id',
+            sourceKey: 'uuid',
+        });
+    };
+    
 
     return GuestUser;
 };

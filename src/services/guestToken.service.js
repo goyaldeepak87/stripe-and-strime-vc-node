@@ -24,7 +24,7 @@ const generateAuthTokens = async (user) => {
   console.log("user==?9849879", user.uuid, user.name)
 
   const accessTokenExpires = moment().add(config.jwt.accessExpirationMinutes, 'minutes');
-  const accessToken = generateToken(user.uuid, user.name, accessTokenExpires, tokenTypes.ACCESS);
+  const accessToken = generateToken(user.uuid, user.name, accessTokenExpires, tokenTypes.GUESTACCESS);
 
   const refreshTokenExpires = moment().add(config.jwt.refreshExpirationDays, 'days');
   const refreshToken = generateToken(user.uuid, user.name, refreshTokenExpires, tokenTypes.REFRESH);

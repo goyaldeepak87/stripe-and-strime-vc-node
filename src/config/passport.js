@@ -1,7 +1,7 @@
 const { Strategy: JwtStrategy, ExtractJwt } = require('passport-jwt');
 const config = require('./config');
 const { tokenTypes } = require('./tokens');
-const { User } = require('../models');
+const { User, GuestUser } = require('../models');
 
 const jwtOptions = {
   secretOrKey: config.jwt.secret,
@@ -10,10 +10,17 @@ const jwtOptions = {
 
 const jwtVerify = async (payload, done) => {
   try {
-    if (payload.type !== tokenTypes.ACCESS) {
+    let user = null;
+
+    // Check token type and verify against the appropriate table
+    if (payload.type === tokenTypes.ACCESS) {
+      user = await User.findOne({ where: { uuid: payload.sub } });
+    } else if (payload.type === tokenTypes.GUESTACCESS) {
+      user = await GuestUser.findOne({ where: { uuid: payload.sub } });
+    } else {
       throw new Error('Invalid token type');
     }
-    const user = await User.findOne({ where: { uuid: payload.sub } });
+
     if (!user) {
       return done(null, false);
     }

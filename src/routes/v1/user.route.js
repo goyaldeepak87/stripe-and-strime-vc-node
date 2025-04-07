@@ -13,10 +13,8 @@ router.post("/update-profile", auth(), upload.single('profile_picture'), userCon
 
 
 // Paymen Stripe
-router.post("/api/checkout_sessions", userController.createCheckoutSession);
-router.get("/api/payment_success", userController.successPayment);
-router.get("/api/profile", (req, res) => {
-    res.send('Hello World!');
-})
+router.post("/api/checkout_sessions",auth(), userController.createCheckoutSession);
+router.get("/api/payment_success", auth(), userController.successPayment);
+router.get("/api/user_list", auth(), userController.userList);
 
 module.exports = router;

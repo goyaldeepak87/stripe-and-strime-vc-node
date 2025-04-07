@@ -2,10 +2,11 @@ const httpStatus = require('http-status');
 const catchAsync = require('../utils/catchAsync');
 const { tokenTypes } = require('../config/tokens');
 const { tokenService, fileService } = require('../services');
-const { Token, User } = require('../models');
+const { Token, User, GuestUser, Payment } = require('../models');
 const { userService } = require('../services');
 const userMessages = require('../messages/userMessages');
-const stripe = require('stripe')("sk_test_51RAcYq4ZzInBLDgLVbhN9KiSvJuwtB5wNReTvYeoKU4RKuwDQfFEqwiu85v9SPSXvgAXsXyoU3UQQc1QVI6NthRd00koPNZBri");
+const { Op } = require('sequelize');
+const stripe = require('stripe')("sk_test_51R9ONz2aFywf1JUEgc6yDNswm4pzy2rROt0H55lqmoWMmjpYynAhFOi4fUemOKOYo7KG5TukTXucsPuRFFUDg9au0033Vbf48w");
 
 const userProfile = catchAsync(async (req, res) => {
     const token = req.headers.authorization;
@@ -48,7 +49,7 @@ const createCheckoutSession = catchAsync(async (req, res) => {
             price_data: {
                 currency: 'usd',
                 product_data: {
-                    name: 'T-shirt',
+                    name: title,
                     // images: ['https://example.com/t-shirt.png'],
                 },
                 unit_amount: price*100,
@@ -82,7 +83,7 @@ const createCheckoutSession = catchAsync(async (req, res) => {
 
 const successPayment = catchAsync(async (req, res) => {
     const sessionId = req.query.session_id;
-    console.log("sessionId", sessionId)
+    console.log("sessionId", sessionId);
 
     if (!sessionId) {
         return res.status(httpStatus.BAD_REQUEST).json({
@@ -102,36 +103,67 @@ const successPayment = catchAsync(async (req, res) => {
     // Assuming you stored the user ID as `client_reference_id` during checkout
     const { uuid, productId, title, customId } = session.metadata;
     const userId = uuid; // Set this in the checkout session as user ID
-    const amountPaid = session.amount_total/100; // Convert from cents to dollars
-    console.log("userId==?",amountPaid, session, userId)
-    // const stripeSessionId = session.id;
+    const amountPaid = session.amount_total / 100; // Convert from cents to dollars
+    const stripeSessionId = session.id;
 
-    // // You can also retrieve product information if needed
-    // const productInfo = session.line_items;
+    // Check if the payment already exists in the database
+    const existingPayment = await Payment.findOne({
+        where: {
+            stripe_session_id: stripeSessionId, // Check by Stripe session ID
+        },
+    });
+
+    if (existingPayment) {
+        return res.sendJSONResponse({
+            statusCode: httpStatus.OK,
+            status: true,
+            message: 'Payment already recorded.',
+            data: { result: existingPayment },
+        });
+    }
 
     // Save payment information to the database
-    // const payment = await Payment.create({
-    //     user_id: userId,
-    //     amount_paid: amountPaid,
-    //     payment_status: 'completed',
-    //     stripe_session_id: stripeSessionId,
-    //     product_info: JSON.stringify(productInfo), // Store the product info as JSON
-    // });
-
-    // console.log('Payment recorded successfully:', payment);
-
+    const payment = await Payment.create({
+        guest_user_id: userId,
+        amount_paid: amountPaid,
+        payment_status: 'completed',
+        stripe_session_id: stripeSessionId,
+        product_info: JSON.stringify({ productId, title, customId }), // Store product info as JSON
+    });
+    
     // Respond with success message and details
     res.sendJSONResponse({
         statusCode: httpStatus.OK,
         status: true,
         message: 'Payment completed successfully.',
-        data: { result: {  } },
+        data: { result: payment },
     });
 });
+
+
+const userList = catchAsync(async (req, res) => {
+    const token = req.headers.authorization;
+    const userID = await tokenService.verifyTokenUserId(token);
+    const AllUserList = await GuestUser.findAll({
+        where: {
+            uuid: {
+                [Op.ne]: userID.sub, // Exclude the current user's UUID
+            },
+        },
+    });
+
+    res.sendJSONResponse({
+        statusCode: httpStatus.OK,
+        status: true,
+        message: userMessages.USER_LIST,
+        data: { result: { AllUserList } },
+    });
+})
 
 module.exports = {
     userProfile,
     userUpadteProfile,
     createCheckoutSession,
     successPayment,
+    userList,
 }
