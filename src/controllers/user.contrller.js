@@ -144,12 +144,43 @@ const successPayment = catchAsync(async (req, res) => {
 const userList = catchAsync(async (req, res) => {
     const token = req.headers.authorization;
     const userID = await tokenService.verifyTokenUserId(token);
+    // const AllUserList = await GuestUser.findAll({
+    //     where: {
+    //         uuid: {
+    //             [Op.ne]: userID.sub, // Exclude the current user's UUID
+    //         },
+    //     },
+    // });
+
+    // const AllUserList = await GuestUser.findAll({
+    //     where: {
+    //         uuid: {
+    //             [Op.ne]: userID.sub, // Exclude the current user's UUID
+    //         },
+    //     },
+    //     include: [
+    //         {
+    //             model: Payment,
+    //             required: true, // Only include users who have made a payment
+    //         },
+    //     ],
+    // });
+
     const AllUserList = await GuestUser.findAll({
         where: {
             uuid: {
                 [Op.ne]: userID.sub, // Exclude the current user's UUID
             },
         },
+        include: [
+            {
+                model: Payment,
+                required: true, // Only include users who have payments
+                where: {
+                    payment_status: 'completed', // Only include completed payments
+                },
+            },
+        ],
     });
 
     res.sendJSONResponse({
