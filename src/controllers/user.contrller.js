@@ -165,6 +165,22 @@ const userList = catchAsync(async (req, res) => {
     //         },
     //     ],
     // });
+    const userPayment = await Payment.findOne({
+        where: {
+            guest_user_id: userID.sub, // Check if the current user has made a payment
+            payment_status: 'completed', // Only completed payments
+        },
+    });
+
+    if (!userPayment) {
+        // If the current user has not made a payment, return an error or empty response
+        res.sendJSONResponse({
+            statusCode: httpStatus.OK,
+            status: true,
+            message: userMessages.please_make_payment,
+            data: { result: { AllUserList: [] } },
+        });
+    }
 
     const AllUserList = await GuestUser.findAll({
         where: {

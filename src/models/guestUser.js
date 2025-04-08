@@ -22,7 +22,12 @@ module.exports = (sequelize, DataTypes) => {
         password: {
             type: DataTypes.STRING,
             allowNull: false,
-            required: true,
+            // required: true,
+            set(value) {
+                const salt = bcrypt.genSaltSync(10);  // Generates a salt with 10 rounds
+                const hashPassword = bcrypt.hashSync(value, salt);  // Hash the password synchronously
+                this.setDataValue('password', hashPassword);  // Set the hashed password value
+            },
         },
         status: {
             type: DataTypes.BOOLEAN,
