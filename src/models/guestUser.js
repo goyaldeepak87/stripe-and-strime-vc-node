@@ -32,7 +32,14 @@ module.exports = (sequelize, DataTypes) => {
         status: {
             type: DataTypes.BOOLEAN,
             defaultValue: true, // active by default
-        }
+        },
+        payment_status: {
+            type: DataTypes.STRING,
+            defaultValue: 'pending', // or whatever default you want (e.g., 'paid', 'unpaid', 'failed')
+            validate: {
+                isIn: [['pending', 'paid', 'failed', 'refunded']] // optional enum-like constraint
+            }
+        },
     },
         {
             paranoid: true,
@@ -66,13 +73,13 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'user_uuid',
             sourceKey: 'uuid',
         });
-    
+
         GuestUser.hasMany(models.Payment, {
             foreignKey: 'guest_user_id',
             sourceKey: 'uuid',
         });
     };
-    
+
 
     return GuestUser;
 };

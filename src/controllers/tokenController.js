@@ -2,6 +2,7 @@ const { RtcTokenBuilder, RtcRole } = require('agora-access-token');
 
 // Generate Agora token for RTC
 exports.generateRtcToken = (req, res) => {
+  console.log("sadasd", req.body);
   try {
     const { channelName, uid, role } = req.body;
     console.log('Generating token for channel:', role);

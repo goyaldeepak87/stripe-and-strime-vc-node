@@ -31,6 +31,10 @@ module.exports = {
         type: Sequelize.BOOLEAN,
         defaultValue: true
       },
+      payment_status: {
+        type: Sequelize.STRING,
+        defaultValue: 'pending',
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE

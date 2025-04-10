@@ -131,6 +131,11 @@ const successPayment = catchAsync(async (req, res) => {
         product_info: JSON.stringify({ productId, title, customId }), // Store product info as JSON
     });
     
+    await GuestUser.update(
+        { payment_status: 'paid' }, // Update the payment_status field
+        { where: { uuid: userId } } // Match the user by UUID
+    );
+    
     // Respond with success message and details
     res.sendJSONResponse({
         statusCode: httpStatus.OK,
