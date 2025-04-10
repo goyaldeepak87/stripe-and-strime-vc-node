@@ -3,7 +3,7 @@ const config = require('./config');
 module.exports = {
     development: {
         username: config.dbUser,
-        password: config.dbPassword,
+        password: "",
         database: config.dbName,
         host: config.dbHost,
         dialect: 'mysql',

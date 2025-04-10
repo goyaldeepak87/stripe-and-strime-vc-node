@@ -6,7 +6,7 @@ const { Token, User, GuestUser, Payment } = require('../models');
 const { userService } = require('../services');
 const userMessages = require('../messages/userMessages');
 const { Op } = require('sequelize');
-const stripe = require('stripe')("sk_test_51R9ONz2aFywf1JUEgc6yDNswm4pzy2rROt0H55lqmoWMmjpYynAhFOi4fUemOKOYo7KG5TukTXucsPuRFFUDg9au0033Vbf48w");
+const stripe = require('stripe')("sk_test_51RAcYq4ZzInBLDgLVbhN9KiSvJuwtB5wNReTvYeoKU4RKuwDQfFEqwiu85v9SPSXvgAXsXyoU3UQQc1QVI6NthRd00koPNZBri");
 
 const userProfile = catchAsync(async (req, res) => {
     const token = req.headers.authorization;
