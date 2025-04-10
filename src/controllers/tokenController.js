@@ -4,6 +4,7 @@ const { RtcTokenBuilder, RtcRole } = require('agora-access-token');
 exports.generateRtcToken = (req, res) => {
   try {
     const { channelName, uid, role } = req.body;
+    console.log('Generating token for channel:', role);
     
     if (!channelName) {
       return res.status(400).json({ error: 'Channel name is required' });
@@ -24,7 +25,7 @@ exports.generateRtcToken = (req, res) => {
     
     // Determine the role
     let roleType;
-    if (role === 'publisher' || role === 'host') {
+    if (role === 'publisher') {
       roleType = RtcRole.PUBLISHER;
     } else {
       roleType = RtcRole.SUBSCRIBER;
