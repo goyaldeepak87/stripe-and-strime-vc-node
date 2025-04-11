@@ -5,6 +5,9 @@ module.exports = function(io) {
   // Store active users by room
   const roomUsers = {};
   
+  // Store host media status by room for reconnecting clients
+  const hostMediaStatus = {};
+  
   io.on('connection', (socket) => {
     // Extract basic info from connection query
     const { roomId, username, userId, role } = socket.handshake.query;
@@ -64,6 +67,11 @@ module.exports = function(io) {
       
       // Send viewer count
       io.to(roomId).emit('viewerCount', roomUsers[roomId].length);
+      
+      // If this is audience, send current host media status if available
+      if (userData.role === 'audience' && hostMediaStatus[roomId]) {
+        socket.emit('hostMediaStatus', hostMediaStatus[roomId]);
+      }
     });
     
     // Handle chat messages
@@ -94,6 +102,25 @@ module.exports = function(io) {
       console.log(`Permission change in ${roomId}: ${type} set to ${allowed}`);
       // Broadcast to all users in the room
       io.to(roomId).emit('permissionChange', { type, allowed });
+    });
+    
+    // Host media status update
+    socket.on('hostMediaStatus', ({ roomId, audioEnabled, videoEnabled }) => {
+      console.log(`Host media status update for room ${roomId}: audio=${audioEnabled}, video=${videoEnabled}`);
+      
+      // Store the current status for reconnecting clients
+      hostMediaStatus[roomId] = { audioEnabled, videoEnabled };
+      
+      // Broadcast to all users in the room except sender
+      socket.to(roomId).emit('hostMediaStatus', { audioEnabled, videoEnabled });
+    });
+    
+    // Request host media status (for clients joining or reconnecting)
+    socket.on('requestHostMediaStatus', ({ roomId }) => {
+      console.log(`Host media status requested for room ${roomId}`);
+      if (hostMediaStatus[roomId]) {
+        socket.emit('hostMediaStatus', hostMediaStatus[roomId]);
+      }
     });
     
     // Kick user
@@ -143,6 +170,8 @@ module.exports = function(io) {
         if (roomUsers[currentRoom].length === 0) {
           console.log(`Room ${currentRoom} is now empty, removing`);
           delete roomUsers[currentRoom];
+          // Also clean up host media status
+          delete hostMediaStatus[currentRoom];
         } else {
           // Notify remaining users if we found who disconnected
           if (disconnectedUser) {
