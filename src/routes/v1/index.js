@@ -34,7 +34,7 @@ if (config.nodeEnv == 'development') {
   defaultRoutes.forEach((route) => {
     router.use(route.path, route.route);
   });
-}else{
+} else {
   defaultRoutes.forEach((route) => {
     router.use(route.path, route.route);
   });
