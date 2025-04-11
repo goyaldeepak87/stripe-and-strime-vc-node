@@ -56,6 +56,27 @@ const registerEmail = {
   // }),
 };
 
+const productDetails = {
+  body: Joi.object().keys({
+    active: Joi.boolean().required(),
+    id: Joi.number().integer().required(),
+    price: Joi.number().required(),
+    prodectId: Joi.string().required(),
+    title: Joi.string().required(),
+    uuid: Joi.string().guid({
+      version: [
+        'uuidv4'
+      ]
+    }).required()
+  }),
+};
+
+const paymentSuccess = {
+  query: Joi.object().keys({
+    session_id: Joi.string().required()
+  }),
+};
+
 
 const userHeaderCheck = {
   headers: Joi.object().keys({
@@ -96,5 +117,7 @@ module.exports = {
   updateUser,
   deleteUser,
   registerEmail,
-  userHeaderCheck
+  userHeaderCheck,
+  productDetails,
+  paymentSuccess,
 };
