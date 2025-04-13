@@ -26,7 +26,7 @@ router.post("/update-profile", auth(), upload.single('profile_picture'), userCon
 // create sessions host
 router.post("/api/host/create_sessions",validate(userValidation.createMeeting), auth(), userController.createOrganizerSession);
 router.get("/api/host/my_sessions", auth(), userController.mySessions);
-router.get('/api/meetings', auth(), userController.getAllMeetings);
+router.get('/api/meetings', userController.getAllMeetings);
 router.get('/api/my-booked-meetings', auth(), userController.myBookedMeetings);
 
 // Stripe Payment Routes
