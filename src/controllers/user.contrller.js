@@ -2,10 +2,10 @@ const httpStatus = require('http-status');
 const catchAsync = require('../utils/catchAsync');
 const { tokenTypes } = require('../config/tokens');
 const { tokenService, fileService } = require('../services');
-const { Token, User, GuestUser, Payment } = require('../models');
+const { Token, User, GuestUser, Payment, Meeting } = require('../models');
 const { userService } = require('../services');
 const userMessages = require('../messages/userMessages');
-const { Op } = require('sequelize');
+const { Op, Sequelize } = require('sequelize');
 const stripe = require('stripe')("sk_test_51RAcYq4ZzInBLDgLVbhN9KiSvJuwtB5wNReTvYeoKU4RKuwDQfFEqwiu85v9SPSXvgAXsXyoU3UQQc1QVI6NthRd00koPNZBri");
 
 const userProfile = catchAsync(async (req, res) => {
@@ -43,7 +43,7 @@ const userUpadteProfile = catchAsync(async (req, res) => {
 
 const createCheckoutSession = catchAsync(async (req, res) => {
     console.log("req.body", req.body)
-    const { uuid, id, title, price, prodectId } = req.body;
+    const { uuid, id, title, price, meeting_id } = req.body;
     const lineitems = [
         {
             price_data: {
@@ -52,7 +52,7 @@ const createCheckoutSession = catchAsync(async (req, res) => {
                     name: title,
                     // images: ['https://example.com/t-shirt.png'],
                 },
-                unit_amount: price*100,
+                unit_amount: price * 100,
             },
             quantity: 1,
         },
@@ -65,7 +65,7 @@ const createCheckoutSession = catchAsync(async (req, res) => {
         cancel_url: `http://localhost:3000/cancel`,
         metadata: {
             uuid,           // Unique identifier for the product
-            productId: prodectId,  // Product ID
+            meeting_id,  // Product ID
             title,          // Product title
             customId: id    // Custom ID
         },
@@ -80,6 +80,162 @@ const createCheckoutSession = catchAsync(async (req, res) => {
     // });
 })
 
+
+
+const createOrganizerSession = catchAsync(async (req, res) => {
+    const token = req.headers.authorization;
+    const userID = await tokenService.verifyTokenUserId(token);
+
+    // Extract meeting details from request body
+    const { title, description, roomId, scheduledFor, hostName, price } = req.body;
+
+    // Generate a random string (6 characters)
+    const randomString = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+    // Create a unique roomId by combining the original roomId, host name, and random string
+    const uniqueRoomId = `${roomId}-${userID?.role}-${randomString}`;
+
+    try {
+        // Create a new meeting record
+        const meeting = await Meeting.create({
+            title,
+            description,
+            roomId: uniqueRoomId, // Use the unique roomId
+            scheduledFor: new Date(scheduledFor),
+            user_uuid: userID.sub, // Link the meeting to the user who created it
+            price
+        });
+
+        // Respond with success message and the created meeting
+        res.sendJSONResponse({
+            statusCode: httpStatus.CREATED,
+            status: true,
+            message: 'Meeting session created successfully',
+            data: {
+                result: meeting,
+                uniqueRoomId // Include the uniqueRoomId in the response
+            },
+        });
+    } catch (error) {
+        console.error("Error creating meeting:", error);
+        res.sendJSONResponse({
+            statusCode: httpStatus.INTERNAL_SERVER_ERROR,
+            status: false,
+            message: 'Failed to create meeting session',
+            error: error.message,
+        });
+    }
+});
+
+
+const mySessions = catchAsync(async (req, res) => {
+    const token = req.headers.authorization;
+    const userID = await tokenService.verifyTokenUserId(token);
+    
+    // Get all meetings created by this host
+    const meetings = await Meeting.findAll({
+        where: { user_uuid: userID.sub },
+        include: [
+            {
+                model: GuestUser,
+                attributes: ['uuid', 'name', 'email', 'role'],
+            },
+            {
+                model: Payment,
+                attributes: ['id', 'payment_status'],
+                required: false // Left join to include meetings without payments
+            }
+        ],
+        order: [['scheduledFor', 'ASC']]
+    });
+
+    // Process the meetings to add payment status field
+    const processedMeetings = meetings.map(meeting => {
+        const meetingData = meeting.toJSON();
+        
+        // Check if any payment exists for this meeting
+        meetingData.hasPayment = meetingData.Payments && 
+                                meetingData.Payments.length > 0 &&
+                                meetingData.Payments.some(payment => payment.payment_status === 'paid');
+        
+        // Remove the payments array from the response
+        delete meetingData.Payments;
+        
+        return meetingData;
+    });
+
+    return res.sendJSONResponse({
+        statusCode: 200,
+        status: true,
+        message: "Meetings fetched successfully",
+        data: { meetings: processedMeetings },
+    });
+});
+
+const getAllMeetings = catchAsync(async (req, res) => {
+    const token = req.headers.authorization;
+    const userID = await tokenService.verifyTokenUserId(token);
+    
+    // Find all meetings EXCEPT those belonging to the current user
+    const meetings = await Meeting.findAll({
+        where: {
+            user_uuid: {
+                [Op.ne]: userID.sub  // Not the current user's meetings
+            },
+            // Use a subquery to exclude meetings with user payments
+            id: {
+                [Op.notIn]: Sequelize.literal(`(
+                    SELECT meeting_id FROM Payments 
+                    WHERE guest_user_id = '${userID.sub}'
+                )`)
+            }
+        },
+        include: [
+            {
+                model: GuestUser,
+                attributes: ['uuid', 'name', 'email', 'role'],
+            }
+        ],
+        order: [['scheduledFor', 'ASC']]
+    });
+    
+    return res.sendJSONResponse({
+        statusCode: 200,
+        status: true,
+        message: "All other users' meetings fetched successfully",
+        data: { meetings },
+    });
+});
+
+const myBookedMeetings = catchAsync(async (req, res) => {
+    const token = req.headers.authorization;
+    const userID = await tokenService.verifyTokenUserId(token);
+    
+    // Find all meetings that the current user has paid for
+    const bookedMeetings = await Meeting.findAll({
+        include: [
+            {
+                model: GuestUser,
+                attributes: ['uuid', 'name', 'email', 'role'],
+            },
+            {
+                model: Payment,
+                required: true, // This ensures only meetings with payments are included
+                where: {
+                    guest_user_id: userID.sub // Only include payments made by the current user
+                }
+            }
+        ],
+        order: [['scheduledFor', 'ASC']] // Order by upcoming meetings first
+    });
+    
+    return res.sendJSONResponse({
+        statusCode: 200,
+        status: true,
+        message: "Your booked meetings fetched successfully",
+        data: { bookedMeetings },
+    });
+});
 
 const successPayment = catchAsync(async (req, res) => {
     const sessionId = req.query.session_id;
@@ -101,7 +257,7 @@ const successPayment = catchAsync(async (req, res) => {
     }
 
     // Assuming you stored the user ID as `client_reference_id` during checkout
-    const { uuid, productId, title, customId } = session.metadata;
+    const { uuid, productId, title, customId, meeting_id } = session.metadata;
     const userId = uuid; // Set this in the checkout session as user ID
     const amountPaid = session.amount_total / 100; // Convert from cents to dollars
     const stripeSessionId = session.id;
@@ -126,16 +282,16 @@ const successPayment = catchAsync(async (req, res) => {
     const payment = await Payment.create({
         guest_user_id: userId,
         amount_paid: amountPaid,
-        payment_status: 'completed',
         stripe_session_id: stripeSessionId,
-        product_info: JSON.stringify({ productId, title, customId }), // Store product info as JSON
+        payment_status: 'paid',
+        meeting_id: meeting_id, // Store product info as JSON
     });
-    
+
     await GuestUser.update(
         { payment_status: 'paid' }, // Update the payment_status field
         { where: { uuid: userId } } // Match the user by UUID
     );
-    
+
     // Respond with success message and details
     res.sendJSONResponse({
         statusCode: httpStatus.OK,
@@ -146,76 +302,13 @@ const successPayment = catchAsync(async (req, res) => {
 });
 
 
-const userList = catchAsync(async (req, res) => {
-    const token = req.headers.authorization;
-    const userID = await tokenService.verifyTokenUserId(token);
-    // const AllUserList = await GuestUser.findAll({
-    //     where: {
-    //         uuid: {
-    //             [Op.ne]: userID.sub, // Exclude the current user's UUID
-    //         },
-    //     },
-    // });
-
-    // const AllUserList = await GuestUser.findAll({
-    //     where: {
-    //         uuid: {
-    //             [Op.ne]: userID.sub, // Exclude the current user's UUID
-    //         },
-    //     },
-    //     include: [
-    //         {
-    //             model: Payment,
-    //             required: true, // Only include users who have made a payment
-    //         },
-    //     ],
-    // });
-    const userPayment = await Payment.findOne({
-        where: {
-            guest_user_id: userID.sub, // Check if the current user has made a payment
-            payment_status: 'completed', // Only completed payments
-        },
-    });
-
-    if (!userPayment) {
-        // If the current user has not made a payment, return an error or empty response
-        res.sendJSONResponse({
-            statusCode: httpStatus.OK,
-            status: true,
-            message: userMessages.please_make_payment,
-            data: { result: { AllUserList: [] } },
-        });
-    }
-
-    const AllUserList = await GuestUser.findAll({
-        where: {
-            uuid: {
-                [Op.ne]: userID.sub, // Exclude the current user's UUID
-            },
-        },
-        include: [
-            {
-                model: Payment,
-                required: true, // Only include users who have payments
-                where: {
-                    payment_status: 'completed', // Only include completed payments
-                },
-            },
-        ],
-    });
-
-    res.sendJSONResponse({
-        statusCode: httpStatus.OK,
-        status: true,
-        message: userMessages.USER_LIST,
-        data: { result: { AllUserList } },
-    });
-})
-
 module.exports = {
     userProfile,
     userUpadteProfile,
     createCheckoutSession,
     successPayment,
-    userList,
+    createOrganizerSession,
+    mySessions,
+    getAllMeetings,
+    myBookedMeetings
 }

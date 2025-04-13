@@ -27,6 +27,14 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
+
+      // ✅ Role column added here
+      role: {
+        type: Sequelize.ENUM('host', 'audience'),
+        allowNull: false,
+        defaultValue: 'audience'
+      },
+
       status: {
         type: Sequelize.BOOLEAN,
         defaultValue: true
@@ -50,6 +58,8 @@ module.exports = {
   },
 
   down: async (queryInterface, Sequelize) => {
+    // Drop ENUM before dropping the table (especially for PostgreSQL)
     await queryInterface.dropTable('GuestUsers');
+    await queryInterface.sequelize.query('DROP TYPE IF EXISTS "enum_GuestUsers_role";');
   }
 };

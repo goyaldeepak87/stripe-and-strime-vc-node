@@ -84,6 +84,7 @@ const guestUserLogin = {
   body: Joi.object().keys({
     email: Joi.string().required(),
     password: Joi.string().required(),
+    role: Joi.string().required(),
     // role: Joi.string().required(),
   })
 };

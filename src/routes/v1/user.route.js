@@ -23,11 +23,14 @@ router.get("/profile", validate(authValidation.logoutSchoolUser), auth(), userCo
 router.post("/update-profile", auth(), upload.single('profile_picture'), userController.userUpadteProfile)
 
 
+// create sessions host
+router.post("/api/host/create_sessions",validate(userValidation.createMeeting), auth(), userController.createOrganizerSession);
+router.get("/api/host/my_sessions", auth(), userController.mySessions);
+router.get('/api/meetings', auth(), userController.getAllMeetings);
+router.get('/api/my-booked-meetings', auth(), userController.myBookedMeetings);
 
 // Stripe Payment Routes
 router.post("/api/checkout_sessions",validate(userValidation.productDetails), auth(), userController.createCheckoutSession);
 router.get("/api/payment_success", validate(userValidation.paymentSuccess),auth(), userController.successPayment);
-// User List Route
-router.get("/api/user_list", auth(), userController.userList);
 
 module.exports = router;

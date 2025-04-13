@@ -8,10 +8,11 @@ const ApiError = require('../utils/ApiError');
 const { tokenTypes } = require('../config/tokens');
 
 
-const generateToken = (userId, name, expires, type, secret = config.jwt.secret) => {
+const generateToken = (userId, name, role, expires, type, secret = config.jwt.secret) => {
   const payload = {
     sub: userId,
     name: name,
+    role: role,
     iat: moment().unix(),
     exp: expires.unix(),
     type,
@@ -19,15 +20,13 @@ const generateToken = (userId, name, expires, type, secret = config.jwt.secret) 
   return jwt.sign(payload, secret);
 };
 
-const generateAuthTokens = async (user) => {
-
-  console.log("user==?9849879", user.uuid, user.name)
+const generateAuthTokens = async (user, role) => {
 
   const accessTokenExpires = moment().add(config.jwt.accessExpirationMinutes, 'minutes');
-  const accessToken = generateToken(user.uuid, user.name, accessTokenExpires, tokenTypes.GUESTACCESS);
+  const accessToken = generateToken(user.uuid, user.name, role, accessTokenExpires, tokenTypes.GUESTACCESS);
 
   const refreshTokenExpires = moment().add(config.jwt.refreshExpirationDays, 'days');
-  const refreshToken = generateToken(user.uuid, user.name, refreshTokenExpires, tokenTypes.REFRESH);
+  const refreshToken = generateToken(user.uuid, user.name, role, refreshTokenExpires, tokenTypes.REFRESH);
 console.log("refreshToken==?984987sss9", refreshToken,accessToken)
   await GuestToken.create({
     token: refreshToken,

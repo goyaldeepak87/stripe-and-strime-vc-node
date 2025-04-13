@@ -104,7 +104,7 @@ const userProfileUpdate = async (req, userID) => {
 // Guest user
 
 const createGuestUser = async (userBody) => {
-    const { email, password } = userBody;
+    const { email, password, role } = userBody;
 
     // Check if the email is already taken
     const emailTaken = await GuestUser.findOne({ where: { email: userBody.email } });
@@ -130,7 +130,7 @@ const createGuestUser = async (userBody) => {
     }
 
     // If email is not taken, create a new guest user
-    const guestUser = await GuestUser.create({ ...userBody, name: "Guest User", password });
+    const guestUser = await GuestUser.create({ ...userBody, name: "Guest User", password, role });
 
     return { guestUser };
 };

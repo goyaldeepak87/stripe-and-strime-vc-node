@@ -1,3 +1,4 @@
+// Payment Model
 module.exports = (sequelize, DataTypes) => {
     const Payment = sequelize.define('Payment', {
         id: {
@@ -9,8 +10,16 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.UUID,
             allowNull: false,
             references: {
-                model: 'GuestUsers', // Table name for GuestUser
+                model: 'GuestUsers',
                 key: 'uuid',
+            },
+        },
+        meeting_id: {  // Add this new field to reference the meeting
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: {
+                model: 'Meetings',
+                key: 'id',
             },
         },
         amount_paid: {
@@ -20,25 +29,31 @@ module.exports = (sequelize, DataTypes) => {
         payment_status: {
             type: DataTypes.STRING,
             allowNull: false,
-            defaultValue: 'pending', // Default status
+            defaultValue: 'pending',
+            validate: {
+                isIn: [['pending', 'paid', 'failed', 'refunded']]
+            }
         },
         stripe_session_id: {
             type: DataTypes.STRING,
             allowNull: false,
         },
-        product_info: {
-            type: DataTypes.TEXT, // Store product info as JSON string
-            allowNull: true,
-        },
     }, {
-        timestamps: true, // Automatically adds createdAt and updatedAt fields
-        paranoid: true,   // Adds deletedAt field for soft deletes
+        timestamps: true,
+        paranoid: true,
     });
 
     Payment.associate = (models) => {
+        // Correct the relationship to GuestUser
         Payment.belongsTo(models.GuestUser, {
             foreignKey: 'guest_user_id',
             targetKey: 'uuid',
+        });
+        
+        // Add relationship to Meeting
+        Payment.belongsTo(models.Meeting, {
+            foreignKey: 'meeting_id',
+            targetKey: 'id',
         });
     };
 

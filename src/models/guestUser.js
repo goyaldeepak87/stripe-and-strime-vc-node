@@ -29,6 +29,14 @@ module.exports = (sequelize, DataTypes) => {
                 this.setDataValue('password', hashPassword);  // Set the hashed password value
             },
         },
+        role: {
+            type: DataTypes.ENUM('host', 'audience'),
+            allowNull: false,
+            defaultValue: 'audience', // You can default it to audience
+            validate: {
+                isIn: [['host', 'audience']],
+            },
+        },
         status: {
             type: DataTypes.BOOLEAN,
             defaultValue: true, // active by default
@@ -73,9 +81,12 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'user_uuid',
             sourceKey: 'uuid',
         });
-
         GuestUser.hasMany(models.Payment, {
             foreignKey: 'guest_user_id',
+            sourceKey: 'uuid',
+        });
+        GuestUser.hasMany(models.Meeting, {
+            foreignKey: 'user_uuid',
             sourceKey: 'uuid',
         });
     };

@@ -61,7 +61,7 @@ const productDetails = {
     active: Joi.boolean().required(),
     id: Joi.number().integer().required(),
     price: Joi.number().required(),
-    prodectId: Joi.string().required(),
+    meeting_id: Joi.number().integer().required(),
     title: Joi.string().required(),
     uuid: Joi.string().guid({
       version: [
@@ -110,6 +110,16 @@ const userHeaderCheck = {
   }).unknown(true),
 };
 
+const createMeeting = {
+  body: Joi.object().keys({
+    title: Joi.string().required(),
+    description: Joi.string().allow('').optional(),
+    scheduledFor: Joi.date().iso().required(),
+    roomId: Joi.string().required(),
+    price: Joi.string().required(),
+  }),
+};
+
 module.exports = {
   createUser,
   getUsers,
@@ -120,4 +130,5 @@ module.exports = {
   userHeaderCheck,
   productDetails,
   paymentSuccess,
+  createMeeting
 };

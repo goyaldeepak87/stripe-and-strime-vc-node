@@ -58,9 +58,27 @@ const deleteProfile = async (req, res) => {
 // Guest user
 
 const guestUserLogin = catchAsync(async (req, res) => {
+    console.log(req.body);
+
+    // Create guest user
     const user = await userService.createGuestUser(req.body);
-    console.log("ussdsader", user.guestUser.uuid)
-    const token = await guestTokenService.generateAuthTokens(user.guestUser)
+    const guestUser = user?.guestUser;
+
+    // Extract and format username
+    const emailPrefix = guestUser?.email?.split("@")[0];
+    const username = emailPrefix
+        ? emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1)
+        : 'Guest';
+
+    // Create role string
+    const role = `${username}_${guestUser?.role}`;
+
+    console.log(user, role);
+
+    // Generate token
+    const token = await guestTokenService.generateAuthTokens(guestUser, role);
+
+    // Send response
     res.sendJSONResponse({
         statusCode: httpStatus.OK,
         status: true,
@@ -68,6 +86,7 @@ const guestUserLogin = catchAsync(async (req, res) => {
         data: { result: { user, token } },
     });
 });
+
 
 module.exports = {
     register,
