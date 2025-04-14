@@ -1,7 +1,7 @@
 module.exports = (sequelize, DataTypes) => {
     const GuestToken = sequelize.define('GuestToken', {
       token: {
-        type: DataTypes.STRING,
+        type: DataTypes.TEXT,
         allowNull: false,
       },
       user_uuid: {
