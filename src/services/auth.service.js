@@ -1,6 +1,6 @@
 const tokenService = require('./token.service');
 const userService = require('./user.service')
-const { User } = require('../models');
+const { User, GuestUser } = require('../models');
 const ApiError = require('../utils/ApiError');
 const httpStatus = require('http-status');
 const { tokenTypes } = require('../config/tokens');
@@ -20,7 +20,7 @@ const { tokenTypes } = require('../config/tokens');
 
 const loginUserWithEmailAndPassword = async (email, password) => {
   // Find user by email, including soft-deleted users
-  const user = await User.scope('withPassword').findOne({
+  const user = await GuestUser.scope('withPassword').findOne({
     where: { email },
     paranoid: false, // Include soft-deleted users
   });
@@ -73,8 +73,40 @@ const deleteUserProfile = async (userID) => {
   await user.destroy()
 }
 
+
+const loginGuestUserWithEmailAndPassword = async (email, password) => {
+  // Find user by email, including soft-deleted users
+  const user = await GuestUser.scope('withPassword').findOne({
+    where: { email },
+    paranoid: false, // Include soft-deleted users
+  });
+
+
+  if (!user) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'Incorrect email or password');
+  }
+
+  // Check if the user account is deactivated (soft-deleted)
+  // if (user.deletedAt) {
+  //   await user.restore(); // Reactivate the account
+  // }
+
+  // Verify password
+  if (!(await user.isPasswordMatch(password))) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'Incorrect email or password');
+  }
+
+  // Check if email is verified
+  if (!user.email_verified) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'Please verify your email before logging in');
+  }
+  
+  return user; // Return the restored user
+};
+
 module.exports = {
   loginUserWithEmailAndPassword,
   resetPassword,
-  deleteUserProfile
+  deleteUserProfile,
+  loginGuestUserWithEmailAndPassword
 };

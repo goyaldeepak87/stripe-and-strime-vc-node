@@ -84,7 +84,17 @@ const guestUserLogin = {
   body: Joi.object().keys({
     email: Joi.string().required(),
     password: Joi.string().required(),
+    // role: Joi.string().required(),
+    // role: Joi.string().required(),
+  })
+};
+
+const guestUserRegister = {
+  body: Joi.object().keys({
+    email: Joi.string().required(),
+    password: Joi.string().required(),
     role: Joi.string().required(),
+    user_name: Joi.string().required(), 
     // role: Joi.string().required(),
   })
 };
@@ -140,6 +150,13 @@ const logoutSchoolUser = {
 };
 
 
+const guestEmailVerify = {
+  query: Joi.object().keys({
+    id: Joi.string().required()
+  }),
+};
+
+
 
 module.exports = {
   register,
@@ -154,5 +171,7 @@ module.exports = {
   loginSuperAdiman,
   headersRoleCheck,
   logoutSchoolUser,
-  guestUserLogin
+  guestUserLogin,
+  guestUserRegister,
+  guestEmailVerify
 };

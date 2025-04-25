@@ -21,13 +21,12 @@ const generateToken = (userId, name, role, expires, type, secret = config.jwt.se
 };
 
 const generateAuthTokens = async (user, role) => {
-
   const accessTokenExpires = moment().add(config.jwt.accessExpirationMinutes, 'minutes');
   const accessToken = generateToken(user.uuid, user.name, role, accessTokenExpires, tokenTypes.GUESTACCESS);
 
   const refreshTokenExpires = moment().add(config.jwt.refreshExpirationDays, 'days');
   const refreshToken = generateToken(user.uuid, user.name, role, refreshTokenExpires, tokenTypes.REFRESH);
-console.log("refreshToken==?984987sss9", refreshToken,accessToken)
+
   await GuestToken.create({
     token: refreshToken,
     user_uuid: user.uuid,

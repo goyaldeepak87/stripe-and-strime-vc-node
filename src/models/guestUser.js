@@ -11,6 +11,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: false,
         },
+        user_name: {
+            type: DataTypes.STRING,
+            allowNull: false,
+        },
         email: {
             type: DataTypes.STRING,
             allowNull: false,
@@ -40,6 +44,10 @@ module.exports = (sequelize, DataTypes) => {
         status: {
             type: DataTypes.BOOLEAN,
             defaultValue: true, // active by default
+        },
+        email_verified: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false, // Users start unverified
         },
         payment_status: {
             type: DataTypes.STRING,

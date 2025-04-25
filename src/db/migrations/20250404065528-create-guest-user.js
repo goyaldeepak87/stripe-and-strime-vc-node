@@ -18,6 +18,10 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
+      user_name: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
       email: {
         type: Sequelize.STRING,
         allowNull: false,
@@ -34,10 +38,13 @@ module.exports = {
         allowNull: false,
         defaultValue: 'audience'
       },
-
       status: {
         type: Sequelize.BOOLEAN,
         defaultValue: true
+      },
+      email_verified: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false, // Users start unverified
       },
       payment_status: {
         type: Sequelize.STRING,

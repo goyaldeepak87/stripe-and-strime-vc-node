@@ -48,6 +48,7 @@ module.exports = (sequelize, DataTypes) => {
         Payment.belongsTo(models.GuestUser, {
             foreignKey: 'guest_user_id',
             targetKey: 'uuid',
+            as: 'paymentUser' // Define an alias for the association extra add 
         });
         
         // Add relationship to Meeting

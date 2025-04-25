@@ -17,7 +17,9 @@ router.post('/user-delete', auth(), authController.deleteProfile)
 
 
 // Guest user
-
+// router.post('/guest-user/login', validate(authValidation.guestUserLogin), authController.guestUserLogin);
+router.post('/guest-user/register', validate(authValidation.guestUserRegister), authController.guestUserRegiter);
+router.get('/guest-user/verify-email', validate(authValidation.guestEmailVerify), authController.guestUserRegiterEmailVerify);
 router.post('/guest-user/login', validate(authValidation.guestUserLogin), authController.guestUserLogin);
 
 module.exports = router;

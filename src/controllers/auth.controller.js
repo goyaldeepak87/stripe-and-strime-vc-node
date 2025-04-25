@@ -3,6 +3,7 @@ const catchAsync = require('../utils/catchAsync');
 const { userService, authService, tokenService, guestTokenService } = require('../services');
 const { generateAuthTokens } = require('../services/token.service');
 const userMessages = require('../messages/userMessages');
+const { sendVerificationEmail } = require('../services/email.service');
 
 const register = catchAsync(async (req, res) => {
     const user = await userService.createUser(req.body);
@@ -57,25 +58,44 @@ const deleteProfile = async (req, res) => {
 
 // Guest user
 
+// const guestUserLogin = catchAsync(async (req, res) => {
+//     console.log(req.body);
+
+//     // Create guest user
+//     const user = await userService.createGuestUser(req.body);
+//     // const guestUser = user?.guestUser;
+
+//     // // Extract and format username
+//     // const emailPrefix = guestUser?.email?.split("@")[0];
+//     // const username = emailPrefix
+//     //     ? emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1)
+//     //     : 'Guest';
+
+//     // // Create role string
+//     // const role = `${username}_${guestUser?.role}`;
+
+//     // console.log(user, role);
+
+//     // // Generate token
+//     // const token = await guestTokenService.generateAuthTokens(guestUser, role);
+
+//     // // Send response
+//     // res.sendJSONResponse({
+//     //     statusCode: httpStatus.OK,
+//     //     status: true,
+//     //     message: userMessages.LOGIN_SUCCESS,
+//     //     data: { result: { user, token } },
+//     // });
+// });
+
+
 const guestUserLogin = catchAsync(async (req, res) => {
-    console.log(req.body);
+    const { email, password } = req.body
+    const user = await authService.loginGuestUserWithEmailAndPassword(email, password);
+    const guestUser = user;
+    const role = user?.role
 
-    // Create guest user
-    const user = await userService.createGuestUser(req.body);
-    const guestUser = user?.guestUser;
-
-    // Extract and format username
-    const emailPrefix = guestUser?.email?.split("@")[0];
-    const username = emailPrefix
-        ? emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1)
-        : 'Guest';
-
-    // Create role string
-    const role = `${username}_${guestUser?.role}`;
-
-    console.log(user, role);
-
-    // Generate token
+    // // Generate token
     const token = await guestTokenService.generateAuthTokens(guestUser, role);
 
     // Send response
@@ -88,10 +108,39 @@ const guestUserLogin = catchAsync(async (req, res) => {
 });
 
 
+const guestUserRegiter = catchAsync(async (req, res) => {
+    const user = await userService.createGuestUser(req.body);
+    await sendVerificationEmail(user.guestUser.email, user.guestUser.uuid);
+    res.sendJSONResponse({
+        statusCode: httpStatus.CREATED,
+        status: true,
+        message: userMessages.USER_REGISTER,
+        data: { result: user },
+    });
+})
+
+const guestUserRegiterEmailVerify = catchAsync(async (req, res) => {
+    const userId = req.query;
+    const user = await userService.RegiterEmailVerifyGuestUser(userId);
+    if (!user) {
+        return res.status(400).json({ message: 'Invalid or expired verification token' });
+    }
+    await userService.GuestUserEmailVerifyUpdate(userId);
+    res.sendJSONResponse({
+        statusCode: httpStatus.CREATED,
+        status: true,
+        message: userMessages.USER_EMAIL_VERIFY,
+        data: { },
+    });
+})
+
+
 module.exports = {
     register,
     login,
     resetPassword,
     deleteProfile,
-    guestUserLogin
+    guestUserLogin,
+    guestUserRegiter,
+    guestUserRegiterEmailVerify
 };

@@ -11,6 +11,7 @@ const userMessages = {
     please_make_payment:'Please make payment to access this feature.',
     PAYMENT_SUCCESS:'Payment successfull',
     USER_LIST:'User List',
+    USER_EMAIL_VERIFY:'User email verify successfully',
 };
 
 module.exports = userMessages;

@@ -42,7 +42,6 @@ const userUpadteProfile = catchAsync(async (req, res) => {
 
 
 const createCheckoutSession = catchAsync(async (req, res) => {
-    console.log("req.body", req.body)
     const { uuid, id, title, price, meeting_id } = req.body;
     const lineitems = [
         {
@@ -131,7 +130,7 @@ const createOrganizerSession = catchAsync(async (req, res) => {
 // const mySessions = catchAsync(async (req, res) => {
 //     const token = req.headers.authorization;
 //     const userID = await tokenService.verifyTokenUserId(token);
-    
+
 //     // Get all meetings created by this host
 //     const meetings = await Meeting.findAll({
 //         where: { user_uuid: userID.sub },
@@ -152,15 +151,15 @@ const createOrganizerSession = catchAsync(async (req, res) => {
 //     // Process the meetings to add payment status field
 //     const processedMeetings = meetings.map(meeting => {
 //         const meetingData = meeting.toJSON();
-        
+
 //         // Check if any payment exists for this meeting
 //         meetingData.hasPayment = meetingData.Payments && 
 //                                 meetingData.Payments.length > 0 &&
 //                                 meetingData.Payments.some(payment => payment.payment_status === 'paid');
-        
+
 //         // Remove the payments array from the response
 //         delete meetingData.Payments;
-        
+
 //         return meetingData;
 //     });
 
@@ -174,11 +173,11 @@ const createOrganizerSession = catchAsync(async (req, res) => {
 
 // const getAllMeetings = catchAsync(async (req, res) => {
 //     const authHeader = req.headers.authorization;
-    
+
 //     // Check for missing or invalid token
 //     if (!authHeader || authHeader === "undefined" || authHeader === "null" || authHeader.trim() === "") {
 //         console.log("No valid token found - showing meetings without payment records");
-        
+
 //         // No token case - show only meetings that don't have any payment records
 //         const meetings = await Meeting.findAll({
 //             where: {
@@ -204,12 +203,12 @@ const createOrganizerSession = catchAsync(async (req, res) => {
 //             data: { meetings },
 //         });
 //     } 
-    
+
 //     // Token exists, verify and filter meetings
 //     try {
 //         const userID = await tokenService.verifyTokenUserId(authHeader);
 //         console.log("User authenticated with ID:", userID.sub);
-        
+
 //         // Find all meetings EXCEPT:
 //         // 1. Those belonging to the current user
 //         // 2. Those that ANY user has already paid for
@@ -234,7 +233,7 @@ const createOrganizerSession = catchAsync(async (req, res) => {
 //             ],
 //             order: [['scheduledFor', 'ASC']]
 //         });
-        
+
 //         return res.sendJSONResponse({
 //             statusCode: 200,
 //             status: true,
@@ -243,7 +242,7 @@ const createOrganizerSession = catchAsync(async (req, res) => {
 //         });
 //     } catch (error) {
 //         console.error("Token verification failed:", error);
-        
+
 //         // If token verification fails, treat it as a no-token scenario
 //         const meetings = await Meeting.findAll({
 //             where: {
@@ -274,7 +273,7 @@ const createOrganizerSession = catchAsync(async (req, res) => {
 const myBookedMeetings = catchAsync(async (req, res) => {
     const token = req.headers.authorization;
     const userID = await tokenService.verifyTokenUserId(token);
-    
+
     // Find all meetings that the current user has paid for
     const bookedMeetings = await Meeting.findAll({
         include: [
@@ -292,7 +291,7 @@ const myBookedMeetings = catchAsync(async (req, res) => {
         ],
         order: [['scheduledFor', 'ASC']] // Order by upcoming meetings first
     });
-    
+
     return res.sendJSONResponse({
         statusCode: 200,
         status: true,
@@ -301,62 +300,100 @@ const myBookedMeetings = catchAsync(async (req, res) => {
     });
 });
 
+// old code for mySessions
+// const mySessions = catchAsync(async (req, res) => {
+//     const userID = await meetingService.getUserFromToken(req.headers.authorization);
+//     if (!userID) {
+//       return res.sendJSONResponse({
+//         statusCode: httpStatus.UNAUTHORIZED,
+//         status: false,
+//         message: 'Authentication failed',
+//       });
+//     }
 
+//     // Get all meetings created by this host
+//     const query = meetingService.buildMeetingQuery({ 
+//       userId: userID.sub, 
+//       includePayments: true 
+//     });
+
+//     const meetings = await Meeting.findAll(query);
+//     const processedMeetings = meetingService.processMeetingResults(meetings);
+
+//     return res.sendJSONResponse({
+//       statusCode: 200,
+//       status: true,
+//       message: "Meetings fetched successfully",
+//       data: { meetings: processedMeetings },
+//     });
+//   });
+
+
+// new code for mySessions
+// Modified controller with booking details
 const mySessions = catchAsync(async (req, res) => {
     const userID = await meetingService.getUserFromToken(req.headers.authorization);
     if (!userID) {
-      return res.sendJSONResponse({
-        statusCode: httpStatus.UNAUTHORIZED,
-        status: false,
-        message: 'Authentication failed',
-      });
+        return res.sendJSONResponse({
+            statusCode: httpStatus.UNAUTHORIZED,
+            status: false,
+            message: 'Authentication failed',
+        });
     }
-    
+
     // Get all meetings created by this host
-    const query = meetingService.buildMeetingQuery({ 
-      userId: userID.sub, 
-      includePayments: true 
+    const query = meetingService.NewCreatebuildMeetingQuery({
+        userId: userID.sub,
+        includePayments: true,
+        includePaymentDetails: true // New option to include detailed payment info
     });
-    
+
     const meetings = await Meeting.findAll(query);
-    const processedMeetings = meetingService.processMeetingResults(meetings);
-  
+    const processedMeetings = meetingService.NewCreateprocessMeetingResults(meetings);
+
     return res.sendJSONResponse({
-      statusCode: 200,
-      status: true,
-      message: "Meetings fetched successfully",
-      data: { meetings: processedMeetings },
+        statusCode: 200,
+        status: true,
+        message: "Meetings fetched successfully",
+        data: { meetings: processedMeetings },
     });
-  });
+});
+
+// Modified buildMeetingQuery function
 
 
-  const getAllMeetings = catchAsync(async (req, res) => {
-    const userID = await meetingService.getUserFromToken(req.headers.authorization);
-    
-    let query;
-    if (!userID) {
-      // No token case - show only meetings that don't have any payment records
-      query = meetingService.buildMeetingQuery({ onlyUnpaid: true });
-    } else {
-      // Show all meetings except user's own and those already paid for by anyone
-      query = meetingService.buildMeetingQuery({ onlyUnpaid: true });
-      // Add condition to exclude current user's meetings
-      query.where = {
-        ...query.where,
-        user_uuid: { [Op.ne]: userID.sub }
-      };
-    }
-    
-    const meetings = await Meeting.findAll(query);
-    
-    return res.sendJSONResponse({
-      statusCode: 200,
-      status: true,
-      message: "All available meetings fetched successfully",
-      data: { meetings },
-    });
-  });
-  
+    // Modified processMeetingResults function
+   
+
+
+// old code for getAllMeetings
+//   const getAllMeetings = catchAsync(async (req, res) => {
+//     const userID = await meetingService.getUserFromToken(req.headers.authorization);
+//     console.log("userID", userID);
+//     let query;
+//     if (!userID) {
+//       // No token case - show only meetings that don't have any payment records
+//       query = meetingService.buildMeetingQuery({ onlyUnpaid: true });
+//     } else {
+//       // Show all meetings except user's own and those already paid for by anyone
+//       query = meetingService.buildMeetingQuery({ onlyUnpaid: true });
+//       // Add condition to exclude current user's meetings
+//       query.where = {
+//         ...query.where,
+//         user_uuid: { [Op.ne]: userID.sub }
+//       };
+//     }
+
+//     const meetings = await Meeting.findAll(query);
+
+//     return res.sendJSONResponse({
+//       statusCode: 200,
+//       status: true,
+//       message: "All available meetings fetched successfully",
+//       data: { meetings },
+//     });
+//   });
+
 
 
 //   const myBookedMeetings = catchAsync(async (req, res) => {
@@ -368,15 +405,15 @@ const mySessions = catchAsync(async (req, res) => {
 //         message: 'Authentication failed',
 //       });
 //     }
-    
+
 //     // Get all meetings that the current user has paid for
 //     const query = meetingService.buildMeetingQuery({ 
 //       onlyPaidByUser: true, 
 //       userId: userID.sub 
 //     });
-    
+
 //     const bookedMeetings = await Meeting.findAll(query);
-    
+
 //     return res.sendJSONResponse({
 //       statusCode: 200,
 //       status: true,
@@ -384,6 +421,60 @@ const mySessions = catchAsync(async (req, res) => {
 //       data: { bookedMeetings },
 //     });
 //   });
+
+// new code for getAllMeetings
+const getAllMeetings = catchAsync(async (req, res) => {
+    const userID = await meetingService.getUserFromToken(req.headers.authorization);
+    console.log("userID", userID);
+
+    let query = {
+        include: [
+            {
+                model: GuestUser,
+                attributes: ['uuid', 'name', 'email', 'role'],
+            }
+        ],
+        order: [['scheduledFor', 'ASC']]
+    };
+
+    if (!userID) {
+        // No token case (not logged in) - show all meetings
+        // No additional conditions needed
+    } else {
+        // User is logged in - don't show meetings created by this user
+        query.where = {
+            user_uuid: { [Op.ne]: userID.sub }
+        };
+
+        // Find meetings this user has already paid for
+        const paidMeetingIds = await Payment.findAll({
+            attributes: ['meeting_id'],
+            where: {
+                guest_user_id: userID.sub,
+                payment_status: 'paid'
+            },
+            raw: true
+        }).then(payments => payments.map(p => p.meeting_id));
+
+        // If they've paid for any meetings, exclude those meetings
+        if (paidMeetingIds.length > 0) {
+            query.where.id = {
+                [Op.notIn]: paidMeetingIds
+            };
+        }
+    }
+
+    const meetings = await Meeting.findAll(query);
+
+    return res.sendJSONResponse({
+        statusCode: 200,
+        status: true,
+        message: "All available meetings fetched successfully",
+        data: { meetings },
+    });
+});
+
+
 
 const successPayment = catchAsync(async (req, res) => {
     const sessionId = req.query.session_id;
